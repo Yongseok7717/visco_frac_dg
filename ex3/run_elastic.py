@@ -24,9 +24,8 @@ rho = Constant(0.920e-3)    # density, scaled by 1e3
 lame1 = Constant(0.456)     # first Lame's parameter
 lame2 = Constant(0.228)     # second Lame's parameter
 
-varphi0 = Constant(0.685+1.37)    # Young's modulus coefficient
+varphi0 = Constant(0.685)    # Young's modulus coefficient
 
-# varphi0 = Constant(1.0)   # Young's modulus coefficient
 
 # problem data
 Nx = 60 
