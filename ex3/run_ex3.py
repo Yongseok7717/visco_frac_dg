@@ -21,7 +21,7 @@ gamma1 = 1.0    # penalty parameter
 k = 2           # degree of polynomials
 
 alpha = Constant(0.449)     # fractional order
-rho = Constant(0.920e-3)    # density, scaled by 1e3 
+rho   = Constant(0.920e-3)    # density, scaled by 1e3 
 lame1 = Constant(0.456)     # first Lame's parameter
 lame2 = Constant(0.228)     # second Lame's parameter
 
@@ -29,11 +29,12 @@ varphi0 = Constant(0.685)   # power law coefficient
 varphi1 = Constant(1.37)    # power law coefficient
 
 # problem data
-T = 0.25     # total simulation time
-Nx = 32 
-Ny = 16  
-Nt = 1200
-dt = T/Nt      # time step
+Nx = 60 
+Ny = 30  
+Nt = 100
+dt = 0.001      # time step
+T  = Nt*dt     # total simulation time
+
 c_frac=math.gamma(3-alpha) # Gamma(3-alpha) for qn
 varphi_a=varphi1*math.gamma(1-alpha) # varphi_alpha
 
@@ -109,10 +110,10 @@ oldw=Function(V)
 # compute Q(wh)+Q(oldw)-wh for r.h.s.
 numDof=len(wh.vector().get_local())   #the number of degree of freedoms
 
-def Quad(n):
-    Sq=(Qw(n+1)[0]+Qw(n)[0])*np.array(W[0:numDof])
+def Quad(oldB,newB,n):
+    Sq=(newB[0]+oldB[0])*np.array(W[0:numDof])
     for i in range(1,n+1):
-        Sq=np.add(Sq,(Qw(n+1)[i]+Qw(n)[i])*np.array(W[numDof*(i):numDof*(i+1)]))
+        Sq=np.add(Sq,(newB[i]+oldB[i])*np.array(W[numDof*(i):numDof*(i+1)]))
     return Sq
 
 # To evaluate energy quantities
@@ -153,28 +154,28 @@ P = (1.0/dt)*M+varphi0*dt/4.0*A+varphi_a*0.5*dt**(1-alpha)/c_frac*A+(1.0/dt)*J
 # assemble only once, before the time stepping
 b = None 
 b2= None
-vtkfile = File('visco/visco.pvd')
-fileResult_u = XDMFFile("visco_vecfield/output_displacement.xdmf")
-fileResult_w = XDMFFile("visco_vecfield/output_velocity.xdmf")
+fileResult_u = XDMFFile("visco_vecfield_modi/output_displacement.xdmf")
+fileResult_w = XDMFFile("visco_vecfield_modi/output_velocity.xdmf")
 fileResult_u.parameters["flush_output"] = True
 fileResult_u.parameters["functions_share_mesh"] = True
-fileResult_u.parameters["rewrite_function_mesh"] = False
 fileResult_w.parameters["flush_output"] = True
 fileResult_w.parameters["functions_share_mesh"] = True
-fileResult_w.parameters["rewrite_function_mesh"] = False
-energies = np.zeros((Nt, 4))
+
+energies = np.zeros((Nt, 3))
+oldB = Qw(0)
 
 for nt in range(0,Nt):
     # update data and solve for tn+k
     g.tn=(nt+0.5)*dt
-    
+    newB = Qw(nt+1)    
+
     # assemble the right hand side
     L=dot(g,v)*ds(1)
     
     b = assemble(L, tensor=b)
     b2=(1.0/dt*M-varphi0*dt/4.0*A+1.0/dt*J)*oldw.vector().get_local()\
         -varphi0*A*oldu.vector().get_local()\
-        -varphi_a*0.5*dt**(1-alpha)/c_frac*A*Quad(nt)
+        -varphi_a*0.5*dt**(1-alpha)/c_frac*A*Quad(oldB,newB,nt)
     b.add_local(b2)
 
     # solve the linear system to get new velocity and new displacement
@@ -184,19 +185,15 @@ for nt in range(0,Nt):
     
     # update old terms
     oldw.assign(wh);oldu.assign(uh);W.extend(wh.vector().get_local())
+    oldB = newB
 
     # evaluate energies
     tn=dt*(nt+1)
     E_kinetic = assemble(kineticEnergy(wh,wh))
     E_elastic = assemble(elasticEnergy(uh,uh))
-    E_mech = E_kinetic+E_elastic
+    energies[nt,:] = np.array([tn,E_kinetic,E_elastic])
 
-    energies[nt,:] = np.array([tn,E_kinetic,E_elastic,E_mech])
-
-    if nt%10 == 0:
-        u1,u2=uh.split()
-        vtkfile << (uh, tn)
-        fileResult_u.write(uh, tn)
-        fileResult_w.write(wh, tn)
+    fileResult_u.write(uh, tn)
+    fileResult_w.write(wh, tn)
 
 np.savetxt("Energies.txt",energies,fmt="%2.6e")
