@@ -24,14 +24,16 @@ rho = Constant(0.920e-3)    # density, scaled by 1e3
 lame1 = Constant(0.456)     # first Lame's parameter
 lame2 = Constant(0.228)     # second Lame's parameter
 
-varphi0 = Constant(0.685)   # Young's modulus coefficient
+varphi0 = Constant(0.685+1.37)    # Young's modulus coefficient
+
+# varphi0 = Constant(1.0)   # Young's modulus coefficient
 
 # problem data
-T = 0.25     # total simulation time
-Nx = 32 
-Ny = 16  
-Nt = 1200
-dt = T/Nt      # time step
+Nx = 60 
+Ny = 30  
+Nt = 100
+dt = 0.001      # time step
+T  = Nt*dt     # total simulation time
 
 mesh = RectangleMesh(Point(0.0, 0.0), Point(2.0, 1.0), Nx, Ny,"left")
 
@@ -131,15 +133,15 @@ P = (1.0/dt)*M+varphi0*dt/4.0*A+(1.0/dt)*J
 # assemble only once, before the time stepping
 b = None 
 b2= None
-vtkfile = File('elastic/elastic.pvd')
-fileResult_u = XDMFFile("elastic_vecfield/output_displacement.xdmf")
-fileResult_w = XDMFFile("elastic_vecfield/output_velocity.xdmf")
+fileResult_u = XDMFFile("elastic_vecfield_norm/output_displacement.xdmf")
+fileResult_w = XDMFFile("elastic_vecfield_norm/output_velocity.xdmf")
 fileResult_u.parameters["flush_output"] = True
 fileResult_u.parameters["functions_share_mesh"] = True
-fileResult_u.parameters["rewrite_function_mesh"] = False
+# fileResult_u.parameters["rewrite_function_mesh"] = False
 fileResult_w.parameters["flush_output"] = True
 fileResult_w.parameters["functions_share_mesh"] = True
-fileResult_w.parameters["rewrite_function_mesh"] = False
+# fileResult_w.parameters["rewrite_function_mesh"] = False
+
 energies = np.zeros((Nt, 4))
 
 for nt in range(0,Nt):
@@ -162,18 +164,15 @@ for nt in range(0,Nt):
     # update old terms
     oldw.assign(wh);oldu.assign(uh);W.extend(wh.vector().get_local())
 
-    # evaluate energies
+    # # evaluate energies
     tn=dt*(nt+1)
     E_kinetic = assemble(kineticEnergy(wh,wh))
     E_elastic = assemble(elasticEnergy(uh,uh))
     E_mech = E_kinetic+E_elastic
 
     energies[nt,:] = np.array([tn,E_kinetic,E_elastic,E_mech])
+    
+    fileResult_u.write(uh, tn)
+    fileResult_w.write(wh, tn)
 
-    if nt%10 == 0:
-        u1,u2=uh.split()
-        vtkfile << (uh, tn)
-        fileResult_u.write(uh, tn)
-        fileResult_w.write(wh, tn)
-
-np.savetxt("Energies_elastic.txt",energies,fmt="%2.6e")
+np.savetxt("Energies_elastic_norm.txt",energies,fmt="%2.6e")
