@@ -190,10 +190,10 @@ for i in range(iMin,iMax):
     # compute Q(wh)+Q(oldw)-wh for r.h.s.
     numDof=len(wh.vector().get_local())   #the number of degree of freedoms
   
-    def Quad(n):
-        Sq=(Qw(n+1)[0]+Qw(n)[0])*np.array(W[0:numDof])
+    def Quad(oldB,newB,n):
+        Sq=(newB[0]+oldB[0])*np.array(W[0:numDof])
         for i in range(1,n+1):
-            Sq=np.add(Sq,(Qw(n+1)[i]+Qw(n)[i])*np.array(W[numDof*(i):numDof*(i+1)]))
+            Sq=np.add(Sq,(newB[i]+oldB[i])*np.array(W[numDof*(i):numDof*(i+1)]))
         return Sq
 
     # approximate the exact solution to define surface traction
@@ -235,10 +235,12 @@ for i in range(iMin,iMax):
         
         # assemble only once, before the time stepping
         b = None 
-        b2= None
+        b2= None   
+        oldB = Qw(0)
         for nt in range(0,Nt):
             # update data and solve for tn+k
-            tn=dt*(nt+1);th=dt*nt;            
+            tn=dt*(nt+1);th=dt*nt;
+            newB = Qw(nt+1)                          
             utn=0.5*(uTime(tn)+uTime(th));
             dwtn=0.5*(dwTime(tn)+dwTime(th));
             fwtn=0.5*(fracwTime(tn)+fracwTime(th));
@@ -249,7 +251,7 @@ for i in range(iMin,iMax):
             b = assemble(L, tensor=b)
             b2=(1.0/dt*M-dt/4.0*A+1.0/dt*J)*oldw.vector().get_local()\
                 -A*oldu.vector().get_local()\
-                -0.5*sqrt(dt)/c_frac*A*Quad(nt)
+                -0.5*sqrt(dt)/c_frac*A*Quad(oldB,newB,nt)
             b.add_local(b2)
 
             # solve the linear system to get new velocity and new displacement
@@ -260,6 +262,7 @@ for i in range(iMin,iMax):
 
             # update old terms
             oldw.assign(wh);oldu.assign(uh);W.extend(wh.vector().get_local())
+            oldB = newB
             
         # compute error at last time step
         ux.utn = uTime(T); wx.wtn = wTime(T); 
@@ -268,8 +271,6 @@ for i in range(iMin,iMax):
         err2 = errornorm(ux,uh,'L2')
         err3 = errornorm(wx,wh,'H1')        
         err4 = errornorm(ux,uh,'H1')
-        # err3 = sqrt(errornorm(wx,wh,'H10')**2+errornorm(wx,wh,'L2')**2)
-        # err4 = sqrt(errornorm(ux,uh,'H10')**2+errornorm(ux,uh,'L2')**2)
         
         L2w_error[0,j-jMin+1]=Nt; L2w_error[i-iMin+1,0]=Nxy; L2w_error[i-iMin+1,j-jMin+1]=err1;
         L2u_error[0,j-jMin+1]=Nt; L2u_error[i-iMin+1,0]=Nxy; L2u_error[i-iMin+1,j-jMin+1]=err2;
