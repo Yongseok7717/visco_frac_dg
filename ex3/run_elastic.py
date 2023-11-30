@@ -91,19 +91,6 @@ wh = Function(V,name="Velocity")
 oldu=Function(V)
 oldw=Function(V)
 
-
-
-# To evaluate energy quantities
-
-# kinetic energy
-def kineticEnergy(v1,v2):
-    return 0.5*rho*inner(v1,v2)*dx
-
-# elastic energy
-def elasticEnergy(v1,v2):
-    return 0.5*varphi0*inner(sigma(v1),strain(v2))*dx
-
-
 # to define linear systems
 mass = rho*inner(u,v)*dx
 stiffness = inner(sigma(u),strain(v))*dx- inner(avg(strain(u)), outer(v('+'),n('+'))+outer(v('-'),n('-')))*dS \
@@ -141,7 +128,6 @@ fileResult_w.parameters["flush_output"] = True
 fileResult_w.parameters["functions_share_mesh"] = True
 # fileResult_w.parameters["rewrite_function_mesh"] = False
 
-energies = np.zeros((Nt, 4))
 
 for nt in range(0,Nt):
     # update data and solve for tn+k
@@ -163,15 +149,6 @@ for nt in range(0,Nt):
     # update old terms
     oldw.assign(wh);oldu.assign(uh);W.extend(wh.vector().get_local())
 
-    # # evaluate energies
-    tn=dt*(nt+1)
-    E_kinetic = assemble(kineticEnergy(wh,wh))
-    E_elastic = assemble(elasticEnergy(uh,uh))
-    E_mech = E_kinetic+E_elastic
-
-    energies[nt,:] = np.array([tn,E_kinetic,E_elastic,E_mech])
-    
     fileResult_u.write(uh, tn)
     fileResult_w.write(wh, tn)
 
-np.savetxt("Energies_elastic_norm.txt",energies,fmt="%2.6e")
