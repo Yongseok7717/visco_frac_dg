@@ -93,11 +93,11 @@ oldw=Function(V)
 
 # to define linear systems
 mass = rho*inner(u,v)*dx
-stiffness = inner(sigma(u),strain(v))*dx- inner(avg(strain(u)), outer(v('+'),n('+'))+outer(v('-'),n('-')))*dS \
-            - inner(avg(strain(v)), outer(u('+'),n('+'))+outer(u('-'),n('-')))*dS \
+stiffness = inner(sigma(u),strain(v))*dx- inner(avg(sigma(u)), outer(v('+'),n('+'))+outer(v('-'),n('-')))*dS \
+            - inner(avg(sigma(v)), outer(u('+'),n('+'))+outer(u('-'),n('-')))*dS \
             + gamma0/(h_avg**gamma1)*dot(jump(u), jump(v))*dS \
-            - inner(strain(u), outer(v,n))*ds(2) \
-            - inner(outer(u,n), strain(v))*ds(2) \
+            - inner(sigma(u), outer(v,n))*ds(2) \
+            - inner(outer(u,n), sigma(v))*ds(2) \
             + gamma0/(h**gamma1)*dot(u,v)*ds(2)
 jump_penalty =  gamma0/(h_avg**gamma1)*dot(jump(u), jump(v))*dS  + gamma0/(h**gamma1)*dot(u,v)*ds(2)  
 
