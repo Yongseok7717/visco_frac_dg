@@ -161,7 +161,6 @@ fileResult_u.parameters["functions_share_mesh"] = True
 fileResult_w.parameters["flush_output"] = True
 fileResult_w.parameters["functions_share_mesh"] = True
 
-energies = np.zeros((Nt, 3))
 oldB = Qw(0)
 
 for nt in range(0,Nt):
@@ -187,13 +186,6 @@ for nt in range(0,Nt):
     oldw.assign(wh);oldu.assign(uh);W.extend(wh.vector().get_local())
     oldB = newB
 
-    # evaluate energies
-    tn=dt*(nt+1)
-    E_kinetic = assemble(kineticEnergy(wh,wh))
-    E_elastic = assemble(elasticEnergy(uh,uh))
-    energies[nt,:] = np.array([tn,E_kinetic,E_elastic])
-
     fileResult_u.write(uh, tn)
     fileResult_w.write(wh, tn)
 
-np.savetxt("Energies.txt",energies,fmt="%2.6e")
