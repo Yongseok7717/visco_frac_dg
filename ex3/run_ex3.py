@@ -64,7 +64,7 @@ def strain(v):
     Dv=grad(v)
     return 0.5*(Dv+Dv.T)
 
-# Stress tensor (elasticity part)
+# Linear elasticity 
 def sigma(v):
     return  lame1*tr(strain(v))*Identity(2) +2*lame2*strain(v)
     
@@ -116,23 +116,14 @@ def Quad(oldB,newB,n):
         Sq=np.add(Sq,(newB[i]+oldB[i])*np.array(W[numDof*(i):numDof*(i+1)]))
     return Sq
 
-# To evaluate energy quantities
-
-# kinetic energy
-def kineticEnergy(v1,v2):
-    return 0.5*rho*inner(v1,v2)*dx
-
-# elastic energy
-def elasticEnergy(v1,v2):
-    return 0.5*varphi0*inner(sigma(v1),strain(v2))*dx
 
 # to define linear systems
 mass = rho*inner(u,v)*dx
-stiffness = inner(sigma(u),strain(v))*dx- inner(avg(strain(u)), outer(v('+'),n('+'))+outer(v('-'),n('-')))*dS \
-            - inner(avg(strain(v)), outer(u('+'),n('+'))+outer(u('-'),n('-')))*dS \
+stiffness = inner(sigma(u),strain(v))*dx- inner(avg(sigma(u)), outer(v('+'),n('+'))+outer(v('-'),n('-')))*dS \
+            - inner(avg(sigma(v)), outer(u('+'),n('+'))+outer(u('-'),n('-')))*dS \
             + gamma0/(h_avg**gamma1)*dot(jump(u), jump(v))*dS \
-            - inner(strain(u), outer(v,n))*ds(2) \
-            - inner(outer(u,n), strain(v))*ds(2) \
+            - inner(sigma(u), outer(v,n))*ds(2) \
+            - inner(outer(u,n), sigma(v))*ds(2) \
             + gamma0/(h**gamma1)*dot(u,v)*ds(2)
 jump_penalty =  gamma0/(h_avg**gamma1)*dot(jump(u), jump(v))*dS  + gamma0/(h**gamma1)*dot(u,v)*ds(2)  
 
