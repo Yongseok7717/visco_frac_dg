@@ -30,7 +30,7 @@ varphi0 = Constant(0.685)    # Young's modulus coefficient
 # problem data
 Nx = 60 
 Ny = 30  
-Nt = 100
+Nt = 1000
 dt = 0.001      # time step
 T  = Nt*dt     # total simulation time
 
