@@ -31,7 +31,7 @@ varphi1 = Constant(1.37)    # power law coefficient
 # problem data
 Nx = 60 
 Ny = 30  
-Nt = 100
+Nt = 1000
 dt = 0.001      # time step
 T  = Nt*dt     # total simulation time
 
